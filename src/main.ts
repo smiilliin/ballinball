@@ -59,8 +59,7 @@ class Vector2 {
 const g = 9.8;
 class Ball extends PIXI.Graphics {
   radius: number;
-  mvelocity: Vector2;
-  newMVelocity: Vector2;
+  velocity: Vector2;
 
   constructor(radius: number) {
     super();
@@ -68,8 +67,7 @@ class Ball extends PIXI.Graphics {
     this.beginFill(0xffffff);
     this.drawCircle(0, 0, radius * 100);
     this.endFill();
-    this.mvelocity = new Vector2(0, 0);
-    this.newMVelocity = new Vector2(0, 0);
+    this.velocity = new Vector2(0, 0);
     const theta = Math.random() * 2 * Math.PI;
     const r = Math.random() * (bigBallRadius - this.radius);
     this.set(new Vector2(Math.cos(theta) * r, Math.sin(theta) * r));
@@ -93,7 +91,7 @@ class Ball extends PIXI.Graphics {
   }
   tick(timeDelta: number) {
     const startVector = this.getVector().clone();
-    const d = this.mvelocity.mul(timeDelta / 1000);
+    const d = this.velocity.mul(timeDelta / 1000);
     this.move(d);
 
     if (this.getVector().distance() + this.radius > bigBallRadius) {
@@ -112,28 +110,25 @@ class Ball extends PIXI.Graphics {
       const dy = oldVector.y - this.getVector().y;
 
       const A = Math.atan2(-this.getVector().y, this.getVector().x);
-      this.newMVelocity.x =
-        -this.mvelocity.x * Math.cos(2 * A) -
-        -this.mvelocity.y * Math.sin(2 * A);
-      this.newMVelocity.y =
-        -this.mvelocity.x * Math.sin(2 * A) +
-        -this.mvelocity.y * Math.cos(2 * A);
-      this.newMVelocity.y = -this.newMVelocity.y;
+      const newVelocity = new Vector2(0, 0);
+      newVelocity.x =
+        -this.velocity.x * Math.cos(2 * A) - -this.velocity.y * Math.sin(2 * A);
+      newVelocity.y =
+        -this.velocity.x * Math.sin(2 * A) + -this.velocity.y * Math.cos(2 * A);
+      newVelocity.y = -newVelocity.y;
       //calculate velocity error
-      this.newMVelocity.y -= g - Math.sqrt(Math.pow(g, 2) - 2 * g * dy);
+      newVelocity.y -= g - Math.sqrt(Math.pow(g, 2) - 2 * g * dy);
+      this.velocity.set(newVelocity);
     }
 
-    const oldMVelocity = this.newMVelocity.clone();
-    this.newMVelocity.y += (timeDelta / 1000) * g;
-    if (oldMVelocity.y < 0 && this.newMVelocity.y > 0) {
+    const oldMVelocity = this.velocity.clone();
+    this.velocity.y += (timeDelta / 1000) * g;
+    if (oldMVelocity.y < 0 && this.velocity.y > 0) {
       const dv = oldMVelocity.y;
       //calculate velocity error
       this.move(new Vector2(0, dv * (timeDelta / 1000)));
-      this.newMVelocity.y = 0;
+      this.velocity.y = 0;
     }
-  }
-  apply() {
-    this.mvelocity.set(this.newMVelocity);
   }
 }
 
@@ -171,7 +166,6 @@ app.ticker.add(() => {
     }
 
     balls.forEach((ball) => ball.tick(timePassed));
-    balls.forEach((ball) => ball.apply());
   }
 
   lastTime = currentTime;
